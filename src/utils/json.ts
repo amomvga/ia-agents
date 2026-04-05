@@ -6,5 +6,8 @@ export const extractJsonObject = (value: string) => {
     throw new Error('Nenhum objeto JSON válido encontrado na resposta');
   }
 
-  return JSON.parse(value.slice(start, end + 1));
+  const raw = value.slice(start, end + 1);
+  const sanitized = raw.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+
+  return JSON.parse(sanitized);
 };

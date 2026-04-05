@@ -5,6 +5,7 @@ import { router } from '../controllers/router.controller';
 import { runTechnicalAssistant, runTechnicalAssistantBatch } from '../controllers/technical-assistant.controller';
 import { chat, chatBatch } from '../controllers/chat.controller';
 import { executeTool, executeToolWithAudit } from '../controllers/tool-executor.controller';
+import { reliableTechnicalAssistant } from '../controllers/reliability.controller';
 
 const agentRouter = Router();
 
@@ -22,5 +23,7 @@ agentRouter.post('/chat/batch', chatBatch);
 
 agentRouter.post('/tools/execute', executeTool);
 agentRouter.post('/tools/execute/audit', executeToolWithAudit);
+
+agentRouter.post('/reliability/technical-assistant', reliableTechnicalAssistant);
 
 export default agentRouter;

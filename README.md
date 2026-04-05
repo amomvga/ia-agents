@@ -15,6 +15,7 @@ API de agentes de IA construída com Express + TypeScript + Ollama.
   - [Technical Assistant](#technical-assistant)
   - [Chat](#chat)
   - [Tool Executor](#tool-executor)
+  - [Reliability](#reliability)
 
 ---
 
@@ -369,3 +370,118 @@ Igual ao `/tools/execute`, mas inclui um bloco `audit` com resumo da decisão do
   }
 }
 ```
+
+---
+
+### Reliability
+
+Versão resiliente do Technical Assistant com retry automático, fallback local e auditoria de confiabilidade. Tenta gerar a resposta até duas vezes antes de recorrer ao fallback.
+
+**Fluxo interno**
+
+```
+1ª tentativa → prompt normal
+     ↓ falhou
+2ª tentativa → prompt estrito (só JSON, sem texto extra)
+     ↓ falhou
+Fallback local → resposta simplificada sem chamar o LLM
+```
+
+**`POST /agents/reliability/technical-assistant`**
+
+```json
+{
+  "question": "Como funciona o garbage collector no Node.js?",
+  "context": "Estou otimizando uso de memória em produção"
+}
+```
+
+> `context` é opcional.
+
+**Resposta — sucesso na 1ª tentativa**
+
+```json
+{
+  "ok": true,
+  "data": {
+    "title": "Garbage Collector no Node.js",
+    "summary": "O Node.js usa o V8, que implementa um GC geracional...",
+    "steps": [
+      "Entenda a divisão entre Young Generation e Old Generation",
+      "Objetos de curta duração ficam no Young Generation",
+      "O Major GC (Mark-Sweep) coleta objetos de longa duração"
+    ],
+    "warnings": [
+      "Closures podem manter referências vivas sem querer"
+    ],
+    "nextPromptSuggestion": "Como identificar memory leaks no Node.js com heap snapshots?"
+  },
+  "attempts": 1,
+  "usedFallback": false,
+  "audit": {
+    "attempts": 1,
+    "usedFallback": false,
+    "finalStage": "primary"
+  }
+}
+```
+
+**Resposta — sucesso após retry**
+
+```json
+{
+  "ok": true,
+  "data": { "..." },
+  "attempts": 2,
+  "usedFallback": false,
+  "audit": {
+    "attempts": 2,
+    "usedFallback": false,
+    "finalStage": "retry"
+  }
+}
+```
+
+**Resposta — fallback local ativado**
+
+```json
+{
+  "ok": true,
+  "data": {
+    "title": "Resposta simplificada",
+    "summary": "Não foi possível gerar a estrutura completa com segurança para a pergunta: ...",
+    "steps": [
+      "Reformule a pergunta de maneira mais específica",
+      "Peça um exemplo menor e mais objetivo",
+      "Tente novamente com menos contexto ambíguo"
+    ],
+    "warnings": ["A resposta foi gerada por fallback local"],
+    "nextPromptSuggestion": "Explique essa mesma dúvida em formato mais simples e com um exemplo curto"
+  },
+  "attempts": 2,
+  "usedFallback": true,
+  "audit": {
+    "attempts": 2,
+    "usedFallback": true,
+    "finalStage": "fallback"
+  }
+}
+```
+
+**Resposta — erro de input**
+
+```json
+{
+  "ok": false,
+  "error": "A pergunta precisa ter pelo menos 12 caracteres",
+  "stage": "input",
+  "attempts": 0
+}
+```
+
+| `finalStage` | Significado |
+|---|---|
+| `primary` | Respondido na 1ª tentativa |
+| `retry` | Respondido na 2ª tentativa com prompt estrito |
+| `fallback` | LLM falhou nas duas tentativas, resposta local usada |
+| `input-error` | Entrada inválida, LLM não foi chamado |
