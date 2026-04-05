@@ -6,6 +6,7 @@ import { runTechnicalAssistant, runTechnicalAssistantBatch } from '../controller
 import { chat, chatBatch, persistentChat, sessionMemoryView } from '../controllers/chat.controller';
 import { executeTool, executeToolWithAudit } from '../controllers/tool-executor.controller';
 import { reliableTechnicalAssistant } from '../controllers/reliability.controller';
+import { ragQuestion } from '../controllers/rag.controller';
 
 const agentRouter = Router();
 
@@ -27,5 +28,7 @@ agentRouter.post('/tools/execute', executeTool);
 agentRouter.post('/tools/execute/audit', executeToolWithAudit);
 
 agentRouter.post('/reliability/technical-assistant', reliableTechnicalAssistant);
+
+agentRouter.post('/rag/question', ragQuestion);
 
 export default agentRouter;

@@ -17,6 +17,7 @@ API de agentes de IA construída com Express + TypeScript + Ollama.
     - [Chat com Memória](#chat-com-memória)
   - [Tool Executor](#tool-executor)
   - [Reliability](#reliability)
+  - [RAG](#rag)
 
 ---
 
@@ -551,3 +552,91 @@ Fallback local → resposta simplificada sem chamar o LLM
 | `retry` | Respondido na 2ª tentativa com prompt estrito |
 | `fallback` | LLM falhou nas duas tentativas, resposta local usada |
 | `input-error` | Entrada inválida, LLM não foi chamado |
+
+---
+
+### RAG
+
+Retrieval-Augmented Generation — responde perguntas com base em documentos fornecidos. Divide os documentos em chunks, gera embeddings via `nomic-embed-text`, busca os trechos mais relevantes por similaridade de cosseno e usa o LLM para responder com base apenas nesses trechos.
+
+**Fluxo interno**
+
+```
+documentos → chunkDocument → indexChunks (embeddings)
+pergunta   → embedding → cosineSimilarity com índice → top K hits
+top K hits + pergunta → LLM → answer + usedChunkIds + confidence
+```
+
+**Modelos necessários**
+
+| Variável | Modelo | Uso |
+|---|---|---|
+| `OLLAMA_MODEL` | `qwen2.5:7b` | Geração da resposta |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Geração dos embeddings |
+
+---
+
+**`POST /agents/rag/question`**
+
+```json
+{
+  "question": "O que é RAG?",
+  "maxWordsPerChunk": 100,
+  "topK": 3
+}
+```
+
+> `documents` é opcional. Se omitido, usa os documentos de exemplo (`ragSampleDocuments`). `maxWordsPerChunk` padrão: `100`. `topK` padrão: `3`.
+
+**Enviando documentos próprios**
+
+```json
+{
+  "question": "Como funciona o Ollama?",
+  "documents": [
+    {
+      "id": "doc-1",
+      "title": "Introdução ao Ollama",
+      "source": "local://ollama-intro",
+      "content": "Ollama é uma ferramenta para rodar modelos de linguagem localmente..."
+    }
+  ],
+  "maxWordsPerChunk": 80,
+  "topK": 2
+}
+```
+
+**Resposta**
+
+```json
+{
+  "question": "O que é RAG?",
+  "totalDocuments": 3,
+  "totalChunks": 3,
+  "hits": [
+    {
+      "chunk": {
+        "id": "doc-rag-chunk-1",
+        "documentId": "doc-rag",
+        "documentTitle": "RAG",
+        "source": "local://rag",
+        "content": "RAG combina recuperação de contexto com geração de resposta e indexação semântica.",
+        "index": 0
+      },
+      "score": 0.91
+    }
+  ],
+  "answer": {
+    "answer": "RAG (Retrieval-Augmented Generation) combina recuperação de contexto relevante com geração de resposta pelo LLM, usando indexação semântica para encontrar os trechos mais úteis.",
+    "usedChunkIds": ["doc-rag-chunk-1"],
+    "confidence": 0.89
+  }
+}
+```
+
+| Campo | Descrição |
+|---|---|
+| `hits` | Chunks recuperados ordenados por score de similaridade |
+| `answer.usedChunkIds` | IDs dos chunks que o LLM usou para responder |
+| `answer.confidence` | Confiança do LLM na resposta (0–1) |
+| `score` | Similaridade de cosseno entre pergunta e chunk (0–1) |
