@@ -14,6 +14,7 @@ API de agentes de IA construída com Express + TypeScript + Ollama.
   - [Router](#router)
   - [Technical Assistant](#technical-assistant)
   - [Chat](#chat)
+    - [Chat com Memória](#chat-com-memória)
   - [Tool Executor](#tool-executor)
   - [Reliability](#reliability)
 
@@ -257,6 +258,71 @@ Envia múltiplas mensagens em sequência na mesma sessão. As mensagens são pro
   ]
 }
 ```
+
+---
+
+### Chat com Memória
+
+Versão avançada do chat com três camadas de contexto: memória longa (resumo persistido), memória curta (tópicos recentes) e contexto recuperado (histórico formatado). Após cada resposta, o LLM atualiza automaticamente o resumo da sessão.
+
+**Fluxo interno**
+
+```
+Mensagem → appendMessage → buildRetrievedContext (resumo + tópicos + histórico)
+         → generateText → appendMessage (resposta)
+         → buildSessionMemory (LLM atualiza resumo) → updateSessionMemory
+```
+
+---
+
+**`POST /agents/chat/persistent`**
+
+```json
+{
+  "sessionId": "usuario-123",
+  "message": "Como funciona o event loop?"
+}
+```
+
+**Resposta**
+
+```json
+{
+  "sessionId": "usuario-123",
+  "response": "O event loop é o mecanismo que permite ao Node.js...",
+  "memory": {
+    "summary": "Usuário está estudando conceitos fundamentais do Node.js, com foco em event loop.",
+    "lastTopics": ["event loop", "Node.js", "assíncrono"]
+  }
+}
+```
+
+---
+
+**`GET /agents/chat/session/:sessionId/memory`**
+
+Consulta o estado atual da memória de uma sessão sem enviar nova mensagem.
+
+```
+GET /agents/chat/session/usuario-123/memory
+```
+
+**Resposta**
+
+```json
+{
+  "sessionId": "usuario-123",
+  "summary": "Usuário está estudando conceitos fundamentais do Node.js, com foco em event loop.",
+  "lastTopics": ["event loop", "Node.js", "assíncrono"],
+  "totalMessages": 6
+}
+```
+
+| Campo | Descrição |
+|---|---|
+| `summary` | Resumo gerado pelo LLM da conversa até o momento |
+| `lastTopics` | Até 5 tópicos recentes identificados pelo LLM |
+| `totalMessages` | Total de mensagens na sessão (user + assistant) |
 
 ---
 

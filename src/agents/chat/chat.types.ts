@@ -6,7 +6,15 @@ export type ChatMessage = {
   createdAt: string;
 };
 
+export type ChatSessionMemory = {
+  summary: string;
+  lastTopics: string[];
+};
+
 export type ChatSession = {
   sessionId: string;
   messages: ChatMessage[];
+  memory: ChatSessionMemory;
+  createdAt: string;
+  updatedAt: string;
 };

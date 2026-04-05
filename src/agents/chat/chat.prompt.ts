@@ -5,16 +5,44 @@ Você mantém continuidade com base no histórico recente.
 Você não inventa contexto ausente.
 `.trim();
 
+export const memorySummarySystemPrompt = `
+Você resume conversas técnicas de forma objetiva.
+Você responde somente em JSON válido.
+Você preserva temas recentes úteis para continuidade.
+`.trim();
+
+export const buildSessionSummaryPrompt = ({
+  previousSummary,
+  recentMessages,
+}: {
+  previousSummary: string;
+  recentMessages: string;
+}) =>
+  `
+Atualize a memória resumida da conversa.
+
+Resumo anterior:
+${previousSummary || 'Nenhum resumo anterior'}
+
+Mensagens recentes:
+${recentMessages}
+
+Retorne somente JSON válido com:
+{
+  "summary": "resumo atualizado da conversa",
+  "lastTopics": ["tema-1", "tema-2", "tema-3"]
+}
+`.trim();
+
 export const buildChatPrompt = ({
-  historyBlock,
+  retrievedContext,
   userMessage,
 }: {
-  historyBlock: string;
+  retrievedContext: string;
   userMessage: string;
 }) =>
   `
-Histórico recente da conversa:
-${historyBlock || 'Nenhum histórico anterior'}
+${retrievedContext}
 
 Mensagem atual do usuário:
 ${userMessage}

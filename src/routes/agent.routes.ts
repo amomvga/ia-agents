@@ -3,7 +3,7 @@ import { playground } from '../controllers/playground.controller';
 import { classifier } from '../controllers/classifier.controller';
 import { router } from '../controllers/router.controller';
 import { runTechnicalAssistant, runTechnicalAssistantBatch } from '../controllers/technical-assistant.controller';
-import { chat, chatBatch } from '../controllers/chat.controller';
+import { chat, chatBatch, persistentChat, sessionMemoryView } from '../controllers/chat.controller';
 import { executeTool, executeToolWithAudit } from '../controllers/tool-executor.controller';
 import { reliableTechnicalAssistant } from '../controllers/reliability.controller';
 
@@ -20,6 +20,8 @@ agentRouter.post('/runTechnicalAssistantBatch', runTechnicalAssistantBatch);
 
 agentRouter.post('/chat', chat);
 agentRouter.post('/chat/batch', chatBatch);
+agentRouter.post('/chat/persistent', persistentChat);
+agentRouter.get('/chat/session/:sessionId/memory', sessionMemoryView);
 
 agentRouter.post('/tools/execute', executeTool);
 agentRouter.post('/tools/execute/audit', executeToolWithAudit);
