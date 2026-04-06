@@ -18,6 +18,7 @@ API de agentes de IA construída com Express + TypeScript + Ollama.
   - [Tool Executor](#tool-executor)
   - [Reliability](#reliability)
   - [RAG](#rag)
+  - [Code Assistant](#code-assistant)
 
 ---
 
@@ -640,3 +641,138 @@ top K hits + pergunta → LLM → answer + usedChunkIds + confidence
 | `answer.usedChunkIds` | IDs dos chunks que o LLM usou para responder |
 | `answer.confidence` | Confiança do LLM na resposta (0–1) |
 | `score` | Similaridade de cosseno entre pergunta e chunk (0–1) |
+
+---
+
+### Code Assistant
+
+Agente de geração, revisão e refatoração de código TypeScript/JavaScript. Suporta modos isolados ou pipeline encadeado (gerar + revisar em uma só chamada).
+
+---
+
+**`POST /agents/code/generate`**
+
+```json
+{
+  "task": "Criar uma função que valida CPF",
+  "language": "ts",
+  "runtime": "node",
+  "context": "Usar apenas lógica pura, sem libs externas"
+}
+```
+
+**Resposta**
+
+```json
+{
+  "title": "Validador de CPF",
+  "filename": "validate-cpf.ts",
+  "explanation": "Função que valida CPF usando o algoritmo dos dígitos verificadores.",
+  "code": "export const validateCpf = (cpf: string): boolean => { ... }",
+  "warnings": ["Não valida CPFs com todos os dígitos iguais"],
+  "nextStep": "Adicionar testes unitários para os casos de borda"
+}
+```
+
+---
+
+**`POST /agents/code/review`**
+
+```json
+{
+  "code": "function soma(a, b) { return a + b }",
+  "language": "js",
+  "objective": "Verificar tipagem e boas práticas"
+}
+```
+
+**Resposta**
+
+```json
+{
+  "score": 6,
+  "positives": ["Função simples e direta"],
+  "issues": ["Sem tipagem", "Sem JSDoc", "Nome genérico"],
+  "riskLevel": "low",
+  "nextAction": "Adicionar tipos e renomear para algo mais descritivo"
+}
+```
+
+---
+
+**`POST /agents/code/refactor`**
+
+```json
+{
+  "code": "var x = []; for(var i=0;i<arr.length;i++){ if(arr[i]>0) x.push(arr[i]) }",
+  "language": "js",
+  "goal": "Modernizar usando ES6+ e melhorar legibilidade"
+}
+```
+
+**Resposta**
+
+```json
+{
+  "summary": "Substituição de loop imperativo por filter com arrow function.",
+  "changes": ["var → const", "for loop → Array.filter", "arrow function"],
+  "refactoredCode": "const positives = arr.filter(n => n > 0);",
+  "riskLevel": "low",
+  "nextAction": "Adicionar validação de entrada para garantir que arr é um array"
+}
+```
+
+---
+
+**`POST /agents/code/generate-and-review`**
+
+Gera o código e já aplica revisão automática em seguida.
+
+```json
+{
+  "task": "Criar um debounce function genérica",
+  "language": "ts",
+  "runtime": "node"
+}
+```
+
+**Resposta**
+
+```json
+{
+  "generation": {
+    "title": "Debounce Function",
+    "filename": "debounce.ts",
+    "code": "export const debounce = ...",
+    "..."
+  },
+  "review": {
+    "score": 8,
+    "riskLevel": "low",
+    "..."
+  }
+}
+```
+
+---
+
+**`POST /agents/code/assistant`**
+
+Ponto único de entrada para todos os modos via campo `mode`.
+
+```json
+{
+  "mode": "generate",
+  "payload": {
+    "task": "Criar um middleware de autenticação JWT",
+    "language": "ts",
+    "runtime": "node"
+  }
+}
+```
+
+| `mode` | `payload` esperado |
+|---|---|
+| `generate` | `task`, `language`, `runtime`, `context?` |
+| `review` | `code`, `language`, `objective?` |
+| `refactor` | `code`, `language`, `goal` |

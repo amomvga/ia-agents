@@ -7,6 +7,7 @@ import { chat, chatBatch, persistentChat, sessionMemoryView } from '../controlle
 import { executeTool, executeToolWithAudit } from '../controllers/tool-executor.controller';
 import { reliableTechnicalAssistant } from '../controllers/reliability.controller';
 import { ragQuestion } from '../controllers/rag.controller';
+import { generateCode, reviewCode, refactorCode, generateAndReview, codeAssistant } from '../controllers/code.controller';
 
 const agentRouter = Router();
 
@@ -30,5 +31,11 @@ agentRouter.post('/tools/execute/audit', executeToolWithAudit);
 agentRouter.post('/reliability/technical-assistant', reliableTechnicalAssistant);
 
 agentRouter.post('/rag/question', ragQuestion);
+
+agentRouter.post('/code/generate', generateCode);
+agentRouter.post('/code/review', reviewCode);
+agentRouter.post('/code/refactor', refactorCode);
+agentRouter.post('/code/generate-and-review', generateAndReview);
+agentRouter.post('/code/assistant', codeAssistant);
 
 export default agentRouter;
